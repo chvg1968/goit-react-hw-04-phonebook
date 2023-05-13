@@ -3,65 +3,87 @@ import PropTypes from 'prop-types';
 import ContactForm from './ContactForm';
 import SearchFilter from './SearchFilter';
 import ContactList from './ContactList';
+import Storage from './Storage';
 import data from './data.json';
 import '../App.css';
 
-const App = () => {
-  const [contacts, setContacts] = useState([]);
+function App() {
+  const storedContacts = localStorage.getItem('contacts');
+  const [allContacts, setAllContacts] = useState(storedContacts ? JSON.parse(storedContacts) : data.contacts || []);
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    const storedContacts = localStorage.getItem('contacts');
-    if (storedContacts) {
-      setContacts(JSON.parse(storedContacts));
-    } else {
-      setContacts(data.contacts || []);
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('contacts', JSON.stringify(contacts));
-  }, [contacts]);
+    localStorage.setItem('contacts', JSON.stringify(allContacts));
+  }, [allContacts]);
 
   const handleAddContact = (newContact) => {
-    const isContactExist = contacts.some((contact) => contact.name === newContact.name);
-    isContactExist 
-      ? alert(`${newContact.name} ya está en la lista de contactos`)
-      : setContacts([...contacts, { ...newContact, id: `id-${contacts.length + 1}` }]);
+    const isContactExist = allContacts.some(
+      (contact) => contact.name === newContact.name
+    );
+
+    if (isContactExist) {
+      alert(`${newContact.name} is already in the contact list`);
+    } else {
+      const updatedContacts = [
+        ...allContacts,
+        { ...newContact, id: `id-${allContacts.length + 1}` },
+      ];
+      setAllContacts(updatedContacts);
+    }
   };
 
   const handleDeleteContact = (contactId) => {
-    const updatedContacts = contacts.filter((contact) => contact.id !== contactId);
-    setContacts(updatedContacts);
+    const updatedContacts = allContacts.filter(
+      (contact) => contact.id !== contactId
+    );
+
+    setAllContacts(updatedContacts);
   };
 
-  const handleFilterChange = (event) => {
-    setFilter(event.target.value);
+  const handleFilterChange = (filter) => {
+    setFilter(filter);
   };
 
-  const filteredContacts = contacts.filter((contact) =>
-    contact.name.toLowerCase().includes(filter.toLowerCase())
-  );
+  const getVisibleContacts = () => {
+    let visibleContacts = [];
+
+    if (filter !== '') {
+      const filterRegex = new RegExp(filter, 'i');
+      visibleContacts = allContacts.filter((contact) => filterRegex.test(contact.name));
+    } else {
+      visibleContacts = allContacts;
+    }
+
+    // Remove any duplicate contacts
+    const uniqueContacts = [];
+    visibleContacts.forEach((contact) => {
+      if (!uniqueContacts.some((c) => c.name === contact.name)) {
+        uniqueContacts.push(contact);
+      }
+    });
+
+    return uniqueContacts;
+  };
+
+  const visibleContacts = getVisibleContacts();
 
   return (
     <div className="phonebox">
-      <h1>Agenda telefónica ☎</h1>
+      <h1>Phonebook ☎</h1>
+      {/* <Storage /> */}
       <ContactForm onAddContact={handleAddContact} />
-      <h2>Contactos</h2>
-      <SearchFilter value={filter} onChange={handleFilterChange} />
-      <ContactList contacts={filteredContacts} onDeleteContact={handleDeleteContact} />
+      <h2>Contacts</h2>
+      <SearchFilter filter={filter} onChange={handleFilterChange} />
+      <ContactList
+        contacts={visibleContacts}
+        onDeleteContact={handleDeleteContact}
+      />
     </div>
   );
 }
 
 App.propTypes = {
-  contacts: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      number: PropTypes.string.isRequired,
-    })
-  )
+  allContacts: PropTypes.array,
 };
 
 export default App;

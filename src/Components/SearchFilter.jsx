@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { useState } from 'react';
 
 function SearchFilter(props) {
-  const [value, setValue] = useState(props.value);
+  const [value, setValue] = useState(props.value || '');
 
   const handleChange = (event) => {
     setValue(event.target.value);
@@ -20,7 +20,7 @@ function SearchFilter(props) {
 }
 
 SearchFilter.propTypes = {
-  value: PropTypes.string.isRequired,
+  value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
 };
 
